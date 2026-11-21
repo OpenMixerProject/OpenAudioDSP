@@ -2,7 +2,8 @@
 
 Four ADSP-21489 targets share a SPORT/DMA driver. Assigned slots bypass
 bit-exactly; unused slots on active TX lanes are zero. Unused DAI outputs are
-high-Z. The only runtime command is read-only Identify. No X32 firmware changes.
+high-Z. All four cores support Identify; DSP4 also supports Overdrive on its
+first stereo pair. Startup bypass is bit-exact on every core.
 
 ## Paired audio link
 
@@ -46,6 +47,20 @@ as do bad magic and wrong core. Other operations/addresses return status 1
 (unsupported); Identify returns status 0 without writing any setting. Flags
 are `1` for armed or `2` for local deadline fault; neither proves audio valid.
 An Identify reply does not authorize raising FS, return-valid, or unmute.
+
+## Overdrive (DSP4, pair 0 only)
+
+Use the same WDSP v1 frame with DSP4, class 5, index 0 and op `1` (Bypass) or
+`2` (Set and enable). Set bytes 12–35 to six big-endian float32s in order:
+linear pre-gain [1, 16], Q [−1, 0.999999], bias [−1, 1], input HPF [0, 1],
+input LPF [0, 1], output LPF [0, 1]. The filter operands are coefficients, not
+Hz. Send zero operands for Bypass. The audio thread commits a complete valid
+command between blocks; status 2 means not armed/faulted and status 3 means
+invalid operands. Pairs 1–7 always bypass. No stock effects or SDRAM are used.
+
+The existing stereo Overdrive retains separate L/R histories. WING evaluates
+its soft clip with a bounded reciprocal power to support Q near 1 without
+the X32 approximation's integer overflow; the X32 path is unchanged.
 
 ## Build and safety
 

@@ -19,7 +19,8 @@ ROOT = WING.parent.parent
 BOARD_PROFILE = WING / "dsp_board_profile.json"
 TARGETS = (1, 2, 3, 4)
 COMMON = ["targets/wing/audio.cpp", "targets/wing/runtime.c"]
-INCLUDES = ("targets/wing",)
+OVERDRIVE = ["targets/wing/overdrive.cpp", "src/effects/fxBase.cpp", "src/effects/fxOverdrive.cpp"]
+INCLUDES = ("targets/wing", "src/effects")
 
 
 def main():
@@ -45,8 +46,10 @@ def main():
     loader_flags = (*target_flags, "-bSPIHOST", "-fBINARY", "-HostWidth", "8")
     entry = ["targets/wing/audio_test.cpp"] if args.sim else ["targets/wing/sport.c", "targets/wing/runtime-spi.c"]
     elfloader = not args.sim and not args.dxe_only
-    headers = [WING / name for name in ("profile.h", "audio.h", "runtime.h", "version.h")]
-    paths = [ROOT / f for f in [*COMMON, *entry]] + headers + [Path(__file__).resolve(), BOARD_PROFILE]
+    headers = [WING / name for name in ("profile.h", "audio.h", "runtime.h", "version.h", "defines.h")]
+    headers += [ROOT / "src/effects" / f"{name}.h" for name in (
+        "dsp2", "fxBase", "fxOverdrive", "helperFcn", "fastApproxMath")]
+    paths = [ROOT / f for f in [*COMMON, *entry, *OVERDRIVE]] + headers + [Path(__file__).resolve(), BOARD_PROFILE]
     inputs = {p.relative_to(ROOT).as_posix(): p.read_bytes() for p in paths}
     profile_bytes = inputs[BOARD_PROFILE.relative_to(ROOT).as_posix()]
     profile = json.loads(profile_bytes)["profile"]
@@ -84,7 +87,7 @@ def main():
             stage = cwd / "output"
             stage.mkdir()
             for dsp in TARGETS:
-                sources = [*entry, *COMMON]
+                sources = [*entry, *COMMON, *(OVERDRIVE if dsp == 4 else [])]
                 objects = []
                 for source in sources:
                     obj = f"{src}{dsp}_{Path(source).stem}.doj"
@@ -107,7 +110,7 @@ def main():
                     sim = run("sim", dxe, "wing_test_done", "wing_test_result", "4", "120000",
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
                     print(sim)
-                    expected = {1: 1797, 2: 1029, 3: 517, 4: 517}[dsp]
+                    expected = {1: 1797, 2: 1029, 3: 517, 4: 1043}[dsp]
                     result_file = re.search(r"=== ([\w./-]+\.simres\.txt) ===", sim)
                     if result_file and result_file[1].startswith(src):
                         cleanup.append(result_file[1])
