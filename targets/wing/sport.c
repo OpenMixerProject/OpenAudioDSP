@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "audio.h"
+#include "runtime.h"
 
 #define RING 3
 #define CP_ADDRESS 0x7ffffu
@@ -114,14 +115,15 @@ static int allAt(int nextTcb) {
 
 int main(void) {
     armSport();
+    wingRuntimeSpiInit();
     for (int block = 0; ; block = (block + 1) % RING) {
         int nextTcb = (block + 2) % RING;
-        while (!allAt(nextTcb)) {}
+        while (!allAt(nextTcb)) wingRuntimeSpiPoll(WING_ARMED);
         wingAudioProcess((const int32_t (*)[WING_LANE_WORDS])rx[block], render);
         if (!allAt(nextTcb)) {
             enableTx(0);
             wingAudioFault = 1;
-            for (;;) {} // stay high-Z until external reset
+            for (;;) wingRuntimeSpiPoll(WING_FAULT); // report fault until external reset
         }
         memcpy(tx[nextTcb], render, sizeof(render));
         ++wingAudioBlocks;
