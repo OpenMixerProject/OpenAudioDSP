@@ -3,6 +3,15 @@
 #include "runtime.h"
 #include <string.h>
 
+#if WING_DSP != 4
+#include "openaudiodsp/compressor.h"
+#include "openaudiodsp/gate.h"
+extern sGate wingGates[];
+extern bool wingCompEnabled[], wingEqEnabled[];
+extern sCompressor wingCompressor[];
+extern float pm wingEqCoefficients[];
+#endif
+
 static WingRxBlock rx;
 static WingTxBlock tx;
 extern "C" {
@@ -70,6 +79,57 @@ int main(void) {
     for (int slot = 0; slot < WING_TX_LANES * 16; ++slot)
         for (int n = 0; n < 16; ++n)
             check(word(tx, slot, n) == (slot < used ? word(rx, slot, n) : 0));
+
+#if WING_DSP != 4
+    const int gate = WING_DSP == 1 ? 55 : WING_DSP == 2 ? 49 : 23;
+    const int comp = 15;
+    const int fxReturn = gate + 1;
+    wingGates[gate].value_enable = true;
+    wingGates[gate].value_threshold = 0.5f;
+    wingGates[gate].value_coeff_attack = 1.0f;
+    wingGates[gate].value_coeff_release = 1.0f;
+    wingGates[gate].value_hold_ticks = 1;
+    wingCompEnabled[comp] = true;
+    wingCompressor[comp].value_makeup = 0.5f;
+    wingCompressor[comp].value_coeff_release = 1.0f;
+    for (int n = 0; n < 16; ++n) {
+        word(rx, gate, n) = 0x02000000;
+        word(rx, comp, n) = -0x0c000000;
+    }
+#if !defined(WING_TEST_HOST)
+    // Adjacent to compressor, but across a lane boundary. Use real ADI EQ.
+    const int eq = 16;
+    wingEqEnabled[eq] = true;
+    wingEqCoefficients[20 * eq] = 0.5f;
+    wingEqCoefficients[20 * eq + 1] = 1.0f;
+    wingEqCoefficients[20 * eq + 10] = 1.0f;
+    wingEqCoefficients[20 * eq + 11] = 1.0f;
+    for (int n = 0; n < 16; ++n) word(rx, eq, n) = (n - 5) * 0x01000000;
+#endif
+    if (WING_DSP != 2) {
+        wingCompEnabled[fxReturn] = true;
+        wingCompressor[fxReturn].value_makeup = 0.25f;
+        wingCompressor[fxReturn].value_coeff_release = 1.0f;
+        for (int n = 0; n < 16; ++n) word(rx, fxReturn, n) = 0x08000000;
+    }
+    wingAudioProcess(rx, tx);
+    for (int n = 0; n < 16; ++n) {
+        check(word(tx, gate, n) == 0);
+        check(word(tx, comp, n) == -0x06000000);
+        check(word(tx, gate - 1, n) == word(rx, gate - 1, n));
+#if !defined(WING_TEST_HOST)
+        check(word(tx, eq, n) == (n - 5) * 0x00800000);
+#endif
+        if (WING_DSP != 2) check(word(tx, fxReturn, n) == 0x02000000);
+    }
+    for (int n = 0; n < 16; ++n) word(rx, gate, n) = 0x10000000;
+    wingAudioProcess(rx, tx);
+    for (int n = 0; n < 16; ++n) word(rx, gate, n) = 0x02000000;
+    wingAudioProcess(rx, tx);
+    check(word(tx, gate, 15) == 0x02000000); // holds the previous block's open envelope
+    wingAudioProcess(rx, tx);
+    check(word(tx, gate, 0) == 0);
+#endif
 
     wing_test_result[2] = WING_DSP;
     wing_test_result[3] = WING_SAMPLE_RATE;

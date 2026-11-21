@@ -47,6 +47,16 @@ as do bad magic and wrong core. Other operations/addresses return status 1
 are `1` for armed or `2` for local deadline fault; neither proves audio valid.
 An Identify reply does not authorize raising FS, return-valid, or unmute.
 
+## Local strip processing (DSP1–3)
+
+Requires [OpenAudioDSP PR #1](https://github.com/OpenMixerProject/OpenAudioDSP/pull/1)
+for the shared gate, four-band EQ and compressor kernels. Inputs, buses,
+matrices and mains use gate → EQ → compressor; FX returns omit the gate.
+Each strip owns its own state. RX uses the raw slot and TX returns that slot
+pre-fader; FPGA routing, faders and summing remain outside the DSP. Startup
+is bit-exact bypass, and parameters are for stopped bench use only (no WDSP
+writes). DSP4 is unchanged. No WING stock effect models are included.
+
 ## Build and safety
 
 ```sh
