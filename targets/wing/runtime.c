@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
+#include <string.h>
 #include "runtime.h"
 #include "version.h"
 
@@ -28,6 +29,27 @@ int wingRuntimeRequest(const unsigned char req[WING_REQUEST], unsigned char repl
     if (req[8] == 0 && req[9] == 0 && req[10] == 0) {
         status = 0; // Identify, including not-armed/faulted state
     }
+#if WING_DSP == 4
+    else if ((req[8] == 1 || req[8] == 2) && req[9] == 5 && req[10] == 0) {
+        if (flags != WING_ARMED) status = 2;
+        else if (req[8] == 1) {
+            wingAudioOverdrive(0, 0);
+            status = 0;
+        } else {
+            float values[6];
+            const float lo[] = {1.0f, -1.0f, -1.0f, 0, 0, 0};
+            const float hi[] = {16.0f, 0.999999f, 1.0f, 1, 1, 1};
+            status = 0;
+            for (int i = 0; i < 6; ++i) {
+                uint32_t bits = readWord(req + 12 + 4 * i);
+                memcpy(&values[i], &bits, sizeof(bits));
+                if (!(values[i] >= lo[i] && values[i] <= hi[i])) status = 3;
+            }
+            // SPI is polled on the audio thread between blocks, never mid-block.
+            if (!status) wingAudioOverdrive(1, values);
+        }
+    }
+#endif
     writeWord(reply, 0x57445352u); // WDSR
     writeWord(reply + 4, WING_ABI);
     writeWord(reply + 8, readWord(req + 4));

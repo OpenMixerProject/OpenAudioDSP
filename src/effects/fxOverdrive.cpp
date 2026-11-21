@@ -119,12 +119,18 @@ void fxOverdrive::process() {
 			// soft-tube-clipping (good sound, but high demand)
 			clipOut += _bias; // asymmetrical bias
 			float k = 1.0f - _Q;
+#if defined(WING_DSP)
+			// WDSP Q can approach 1. Use the reciprocal form to keep the
+			// second power bounded; the legacy bit approximation can overflow.
+			clipOut *= powf(1.0f / (1.0f + powf(fabsf(clipOut), k)), 1.0f / k);
+#else
 			if (clipOut > 0) {
 				clipOut = clipOut / fastApproxMath_powf(1.0 + fastApproxMath_powf(clipOut, k), 1.0 / k);
 			}else{
 				float absSignal = fabs(clipOut);
 				clipOut = - (absSignal / fastApproxMath_powf(1.0 + fastApproxMath_powf(absSignal, k), 1.0 / k));
 			}
+#endif
 
 			// output lowpass: output = zoutput + coeff * (input - zoutput)
 			// here high frequency-components after clipping will be removed
