@@ -18,7 +18,7 @@ WING = Path(__file__).resolve().parent
 ROOT = WING.parent.parent
 BOARD_PROFILE = WING / "dsp_board_profile.json"
 TARGETS = (1, 2, 3, 4)
-COMMON = ["targets/wing/audio.cpp"]
+COMMON = ["targets/wing/audio.cpp", "targets/wing/runtime.c"]
 INCLUDES = ("targets/wing",)
 
 
@@ -43,9 +43,9 @@ def main():
     proc = "ADSP-21371" if args.sim else "ADSP-21489"
     target_flags = ("-proc", proc, "-si-revision", "any")
     loader_flags = (*target_flags, "-bSPIHOST", "-fBINARY", "-HostWidth", "8")
-    entry = ["targets/wing/audio_test.cpp" if args.sim else "targets/wing/sport.c"]
+    entry = ["targets/wing/audio_test.cpp"] if args.sim else ["targets/wing/sport.c", "targets/wing/runtime-spi.c"]
     elfloader = not args.sim and not args.dxe_only
-    headers = [WING / name for name in ("profile.h", "audio.h")]
+    headers = [WING / name for name in ("profile.h", "audio.h", "runtime.h", "version.h")]
     paths = [ROOT / f for f in [*COMMON, *entry]] + headers + [Path(__file__).resolve(), BOARD_PROFILE]
     inputs = {p.relative_to(ROOT).as_posix(): p.read_bytes() for p in paths}
     profile_bytes = inputs[BOARD_PROFILE.relative_to(ROOT).as_posix()]
@@ -107,7 +107,7 @@ def main():
                     sim = run("sim", dxe, "wing_test_done", "wing_test_result", "4", "120000",
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
                     print(sim)
-                    expected = {1: 1792, 2: 1024, 3: 512, 4: 512}[dsp]
+                    expected = {1: 1797, 2: 1029, 3: 517, 4: 517}[dsp]
                     result_file = re.search(r"=== ([\w./-]+\.simres\.txt) ===", sim)
                     if result_file and result_file[1].startswith(src):
                         cleanup.append(result_file[1])
@@ -146,7 +146,7 @@ def main():
                                "loader_kernel=489_spi.dxe\n"
                                f"loader_flags={shlex.join(loader_flags)}\n") if elfloader else ""
                 (stage / "provenance.txt").write_text(
-                    f"profile={profile}\ndsp_board_profile_sha256={profile_hash}\n"
+                    f"profile={profile}\ndsp_runtime_abi=wdsp-v1\ndsp_board_profile_sha256={profile_hash}\n"
                     f"source_commit={commit}\nsource_sha256={source_hash}\n"
                     f"toolchain=CCES 2.12.1 ({'gateway' if remote else 'native'})\nprocessor={proc}\n"
                     + loader_info + "\n"
