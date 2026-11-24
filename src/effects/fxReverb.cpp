@@ -400,6 +400,7 @@ void fxReverb::rxData(float data[], int len) {
 }
 
 void fxReverb::process() {
+	/*
 	if (_startup) {
 		for (int s = 0; s < SAMPLES_IN_BUFFER; s++) {
 			_bufOut[0][s] = 0;
@@ -443,6 +444,16 @@ void fxReverb::process() {
 		}
 
 		return;
+	}
+	*/
+
+	if (_startup) {
+		_startupCounter++;
+
+		// we are processing 16 samples every 333us -> this will wait 5 seconds
+		if (_startupCounter > (2 * 3000)) {
+			_startup = false;
+		}
 	}
 
 	#pragma loop_count(SAMPLES_IN_BUFFER)
@@ -489,7 +500,11 @@ void fxReverb::process() {
 				if (tail < 0) {
 					tail += _diffusionDelayLineLength[d];
 				}
-				_fxBuf[c] = diffusor.memory[tail];
+				if (_startup) {
+					_fxBuf[c] = 0;
+				}else{
+					_fxBuf[c] = diffusor.memory[tail];
+				}
 			}
 
 			// Step 2.2: mix with Hadamard Matrix
@@ -521,7 +536,11 @@ void fxReverb::process() {
 			if (tail < 0) {
 				tail += _delay[c].memoryLength;
 			}
-			_fxBufOutput[c] = _delay[c].memory[tail];
+			if (_startup) {
+				_fxBufOutput[c] = 0;
+			}else{
+				_fxBufOutput[c] = _delay[c].memory[tail];
+			}
 		}
 
 		// Step 3.2: calculate householder-matrix
@@ -535,7 +554,11 @@ void fxReverb::process() {
 			_delay[c].lowPassDelayState = filtered;
 
 			// SHARC is able to calculate MAC (Multiply-Accumulate)
-			_fxBuf[c] += filtered * _feedbackDecayGain;
+			if (_startup) {
+				_fxBuf[c] = 0;
+			}else{
+				_fxBuf[c] += filtered * _feedbackDecayGain;
+			}
 
 			// feedback without lowpass-filter
 			//_fxBuf[c] += _fxBufFeedback[c] * _feedbackDecayGain;
@@ -546,7 +569,11 @@ void fxReverb::process() {
 		#pragma loop_count(FX_REVERB_INT_CHAN)
 		for (int c = 0; c < FX_REVERB_INT_CHAN; c++) {
 			int& head = _delay[c].head;
-			_delay[c].memory[head] = _fxBuf[c];
+			if (_startup) {
+				_delay[c].memory[head] = 0;
+			}else{
+				_delay[c].memory[head] = _fxBuf[c];
+			}
 
 			head++;
 			if (head == _delay[c].memoryLength) {

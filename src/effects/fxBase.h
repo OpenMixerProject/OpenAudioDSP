@@ -4,6 +4,7 @@
 #include "dsp2.h"
 
 enum fxType {
+    FX_NONE,
 	FX_REVERB,
 	FX_CHORUS,
 	FX_TRANSIENTSHAPER,
@@ -14,8 +15,7 @@ enum fxType {
 	FX_DEFEEDBACK,
 	FX_MATRIXUPMIXER,
 
-	FX_DEMO,
-    FX_NONE
+	FX_DEMO
 };
 
 class fx {
