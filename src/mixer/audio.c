@@ -481,7 +481,7 @@ void audioProcessData(void)
 	//				 |_| \_|\___/|_|___/\___|\__, |\__,_|\__\___|
 	//				                         |___/
 	gateProcessBatch(&audioBuffer[TAP_PRE_EQ][DSP_BUF_IDX_DSPCHANNEL],
-		dsp.dspChannelGate, dsp.gateState, MAX_CHAN_FULLFEATURED);
+		dsp.dspChannelGate, dsp.gateState, MAX_CHAN_FULLFEATURED, INT32_TO_FLOAT_NORM);
 #if DEBUG_COUNT_CYCLES_DETAIL
 	STOP_CYCLE_COUNT(cyclemap[4], cycletemp);
 #endif

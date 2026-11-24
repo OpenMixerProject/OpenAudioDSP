@@ -250,18 +250,27 @@ void commExecCommand(unsigned short classId, unsigned short channel, unsigned sh
 				}
 			}
 			break;
-		case 'g': // gate
+		case 'g': // gate / expander
 			if (channel >= (MAX_CHAN_FULLFEATURED)) {
 				return;
 			}
 
-			if (valueCount == 6) {
-				dsp.dspChannelGate[channel].value_threshold = floatValues[0];
-				dsp.dspChannelGate[channel].value_gainmin = floatValues[1];
-				dsp.dspChannelGate[channel].value_coeff_attack = floatValues[2];
-				dsp.dspChannelGate[channel].value_hold_ticks = floatValues[3];
+			if (valueCount == 9) {
+				bool prevEnable = dsp.dspChannelGate[channel].value_enable;
+				bool newEnable  = (floatValues[8] != 0.0f);
+				dsp.dspChannelGate[channel].value_thresholdSq16 = floatValues[0];
+				dsp.dspChannelGate[channel].value_gainmin       = floatValues[1];
+				dsp.dspChannelGate[channel].value_coeff_attack  = floatValues[2];
+				dsp.dspChannelGate[channel].value_hold_ticks    = floatValues[3];
 				dsp.dspChannelGate[channel].value_coeff_release = floatValues[4];
-				dsp.dspChannelGate[channel].value_enable = (floatValues[5] == 1.0f);
+				dsp.dspChannelGate[channel].value_thresholdDb   = floatValues[5];
+				dsp.dspChannelGate[channel].value_negRangeDb    = floatValues[6];
+				dsp.dspChannelGate[channel].value_expanderSlope = floatValues[7];
+				dsp.dspChannelGate[channel].value_enable        = newEnable;
+				if (!prevEnable && newEnable) {
+					dsp.gateState[channel].envelope = 1.0f;
+					dsp.gateState[channel].holdTimer = 0;
+				}
 			}
 			break;
 		case 'e': // Equalizer/Filter

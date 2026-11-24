@@ -65,7 +65,16 @@ void openx32Init(void)
 
 		dsp.lowcutEnable[ch] = false;
 		dsp.dspChannelGate[ch].value_enable = false;
+		dsp.dspChannelGate[ch].value_thresholdSq16 = 0.0f;
+		dsp.dspChannelGate[ch].value_gainmin = 0.001f;
+		dsp.dspChannelGate[ch].value_coeff_attack = 0.005f;
+		dsp.dspChannelGate[ch].value_hold_ticks = 0.0f;
+		dsp.dspChannelGate[ch].value_coeff_release = 0.001f;
+		dsp.dspChannelGate[ch].value_thresholdDb = -80.0f;
+		dsp.dspChannelGate[ch].value_negRangeDb = -60.0f;
+		dsp.dspChannelGate[ch].value_expanderSlope = 0.0f;
 		dsp.gateState[ch].envelope = 1.0f;
+		dsp.gateState[ch].holdTimer = 0;
 
 		dsp.compressorEnable[ch] = false;
 		dsp.compressorState[ch].envelope = 1.0f;
