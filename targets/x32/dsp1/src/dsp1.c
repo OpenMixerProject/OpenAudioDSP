@@ -68,6 +68,14 @@ void openx32Init(void)
 		dsp.gateState[ch].envelope = 1.0f;
 
 		dsp.compressorEnable[ch] = false;
+		dsp.dspChannelCompressor[ch].value_thresholdDb = 0.0f;
+		dsp.dspChannelCompressor[ch].value_1_minus_1_by_ratio = 0.0f;
+		dsp.dspChannelCompressor[ch].value_makeup = 1.0f;
+		dsp.dspChannelCompressor[ch].value_coeff_attack = 0.005f;
+		dsp.dspChannelCompressor[ch].value_hold_ticks = 0.0f;
+		dsp.dspChannelCompressor[ch].value_coeff_release = 0.001f;
+		dsp.dspChannelCompressor[ch].value_kneeHalf = 0.0f;
+		dsp.dspChannelCompressor[ch].value_kneeCoeff = 0.0f;
 		dsp.compressorState[ch].envelope = 1.0f;
 		dsp.compressorState[ch].holdTimer = 0;
 	}

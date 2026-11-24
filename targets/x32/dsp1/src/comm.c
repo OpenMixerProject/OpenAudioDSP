@@ -326,15 +326,22 @@ void commExecCommand(unsigned short classId, unsigned short channel, unsigned sh
 				return;
 			}
 
-			if (valueCount == 7) {
-				dsp.dspChannelCompressor[channel].value_thresholdDb = floatValues[0];
-				//dsp.dspChannelCompressor[channel].value_threshold = dbToLinear_fast(floatValues[0]) * FLOAT_NORM_TO_INT32;
-				dsp.dspChannelCompressor[channel].value_1_minus_1_by_ratio = floatValues[1]; // here the precalculated (1.0f - 1.0f/ratio) is sent by OMC
-				dsp.dspChannelCompressor[channel].value_makeup = floatValues[2];
-				dsp.dspChannelCompressor[channel].value_coeff_attack = floatValues[3];
-				dsp.dspChannelCompressor[channel].value_hold_ticks = floatValues[4];
-				dsp.dspChannelCompressor[channel].value_coeff_release = floatValues[5];
-				dsp.compressorEnable[channel] = (floatValues[6] == 1.0f);
+			if (valueCount == 9) {
+				bool prevEnable = dsp.compressorEnable[channel];
+				bool newEnable  = (floatValues[8] != 0.0f);
+				dsp.dspChannelCompressor[channel].value_thresholdDb        = floatValues[0];
+				dsp.dspChannelCompressor[channel].value_1_minus_1_by_ratio = floatValues[1];
+				dsp.dspChannelCompressor[channel].value_makeup             = floatValues[2];
+				dsp.dspChannelCompressor[channel].value_coeff_attack       = floatValues[3];
+				dsp.dspChannelCompressor[channel].value_hold_ticks         = floatValues[4];
+				dsp.dspChannelCompressor[channel].value_coeff_release      = floatValues[5];
+				dsp.dspChannelCompressor[channel].value_kneeHalf           = floatValues[6];
+				dsp.dspChannelCompressor[channel].value_kneeCoeff          = floatValues[7];
+				dsp.compressorEnable[channel]                              = newEnable;
+				if (!prevEnable && newEnable) {
+					dsp.compressorState[channel].envelope = 1.0f;
+					dsp.compressorState[channel].holdTimer = 0;
+				}
 			}
 			break;
 		default:
