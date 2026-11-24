@@ -450,8 +450,8 @@ void fxReverb::process() {
 	if (_startup) {
 		_startupCounter++;
 
-		// we are processing 16 samples every 333us -> this will wait 1 seconds
-		if (_startupCounter > (1 * 3000)) {
+		// we are processing 16 samples every 333us -> this will wait 5 seconds
+		if (_startupCounter > (2 * 3000)) {
 			_startup = false;
 		}
 	}
@@ -536,7 +536,11 @@ void fxReverb::process() {
 			if (tail < 0) {
 				tail += _delay[c].memoryLength;
 			}
-			_fxBufOutput[c] = _delay[c].memory[tail];
+			if (_startup) {
+				_fxBufOutput[c] = 0;
+			}else{
+				_fxBufOutput[c] = _delay[c].memory[tail];
+			}
 		}
 
 		// Step 3.2: calculate householder-matrix
