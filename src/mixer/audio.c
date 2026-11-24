@@ -407,66 +407,20 @@ void audioProcessData(void)
 	//				 | |__| (_) \ V  V / (__| |_| | |_
 	//				 |_____\___/ \_/\_/ \___|\__,_|\__|
 	//
-	// Single-Pole LOW-CUT: output = coeff * (zoutput + input - zinput)
-	#pragma loop_count(MAX_CHAN_FULLFEATURED)
-	for (int i_ch = 0; i_ch < MAX_CHAN_FULLFEATURED; i_ch++)
-	{
-		if (!dsp.lowcutEnable[i_ch])
-		{
-			continue;
-		}
+	// Cascaded 2-section SIMD Biquad LOW-CUT (6/12/18/24 dB/oct Butterworth HPF)
+	// + 2-section SIMD Biquad HIGH-CUT (12/24 dB/oct Butterworth LPF) via eqProcessBatch
+	eqProcessBatch(&audioBuffer[TAP_PRE_EQ][DSP_BUF_IDX_DSPCHANNEL], dsp.lowcutEnable,
+		&dsp.lowcutCoeffs[0][0], &dsp.lowcutStates[0][0],
+		MAX_CHAN_FULLFEATURED, LOWCUT_SECTIONS);
 
-		float* buf    = &audioBuffer[TAP_PRE_EQ][DSP_BUF_IDX_DSPCHANNEL + i_ch][0];
-		float  coeff  = dsp.lowcutCoeff[i_ch];
-		float  zinput = dsp.lowcutStatesInput[i_ch];
-		float  zout   = dsp.lowcutStatesOutput[i_ch];
-
-		// optimized loop for SHARC-pipeline
-		#pragma loop_count(SAMPLES_IN_BUFFER)
-		for (int s = 0; s < SAMPLES_IN_BUFFER; s++) {
-			float in  = buf[s];
-			float out = coeff * (zout + in - zinput);
-			buf[s]    = out;
-			zinput    = in;
-			zout      = out;
-		}
-
-		dsp.lowcutStatesInput[i_ch]  = zinput; // zinput = input
-		dsp.lowcutStatesOutput[i_ch] = zout; // zoutput = output
-	}
+	#if USE_HIGHCUT == 1
+	eqProcessBatch(&audioBuffer[TAP_PRE_EQ][DSP_BUF_IDX_DSPCHANNEL], dsp.highcutEnable,
+		&dsp.highcutCoeffs[0][0], &dsp.highcutStates[0][0],
+		MAX_CHAN_FULLFEATURED, HIGHCUT_SECTIONS);
+	#endif
 #if DEBUG_COUNT_CYCLES_DETAIL
 	STOP_CYCLE_COUNT(cyclemap[3], cycletemp);
 #endif
-
-
-
-
-	#if USE_HIGHCUT == 1
-	//                _   _ _       _      ____      _
-	//               | | | (_) __ _| |__  / ___|   _| |_
-	//               | |_| | |/ _` | '_ \| |  | | | | __|
-	//               |  _  | | (_| | | | | |__| |_| | |_
-	//               |_| |_|_|\__, |_| |_|\____\__,_|\__|
-	//                        |___/
-
-	// Single-Pole HIGH-CUT: output = zoutput + coeff * (input - zoutput)
-	#pragma loop_count(MAX_CHAN_FULLFEATURED)
-	for (int i_ch = 0; i_ch < MAX_CHAN_FULLFEATURED; i_ch++) {
-		float* buf    = &audioBuffer[TAP_PRE_EQ][DSP_BUF_IDX_DSPCHANNEL + i_ch][0];
-		float  coeff  = dsp.highcutCoeff[i_ch];
-		float  zout   = dsp.highcutStates[i_ch];
-
-		// optimized loop for SHARC-pipeline
-		#pragma loop_count(SAMPLES_IN_BUFFER)
-		for (int s = 0; s < SAMPLES_IN_BUFFER; s++) {
-			float in  = buf[s];
-			float out = zout + coeff * (in - zout);
-			buf[s]    = out;
-			zout      = out;
-		}
-		dsp.highcutStates[i_ch] = zout; // zoutput = output
-	}
-	#endif
 
 
 

@@ -16,7 +16,9 @@
 
 #define ACTIVE_MIX_BUSSES		16	// 16 MixBusses are possible now
 
-#define USE_HIGHCUT				0
+#define USE_HIGHCUT				1
+#define LOWCUT_SECTIONS			2	// 2 cascaded biquads (6/12/18/24 dB/oct Butterworth HPF via eqProcessBatch)
+#define HIGHCUT_SECTIONS		2	// 2 cascaded biquads (12/24 dB/oct Butterworth LPF via eqProcessBatch)
 
 #define SRUDEBUG  					// Check SRU Routings for errors. Can be removed on final design
 

@@ -36,14 +36,14 @@ extern volatile uint32_t cyclemap[CYCLEMAP_SIZE];
 
 struct
 {
-	float lowcutEnable[MAX_CHAN_FULLFEATURED];
-	float lowcutCoeff[MAX_CHAN_FULLFEATURED];
-	float lowcutStatesInput[MAX_CHAN_FULLFEATURED];
-	float lowcutStatesOutput[MAX_CHAN_FULLFEATURED];
+	bool lowcutEnable[MAX_CHAN_FULLFEATURED];
+	float pm lowcutCoeffs[MAX_CHAN_FULLFEATURED][5 * LOWCUT_SECTIONS]; // interleaved for biquad_trans()
+	float dm lowcutStates[MAX_CHAN_FULLFEATURED][2 * LOWCUT_SECTIONS];
 
 	#if USE_HIGHCUT == 1
-	float highcutCoeff[MAX_CHAN_FULLFEATURED];
-	float highcutStates[MAX_CHAN_FULLFEATURED];
+	bool highcutEnable[MAX_CHAN_FULLFEATURED];
+	float pm highcutCoeffs[MAX_CHAN_FULLFEATURED][5 * HIGHCUT_SECTIONS]; // interleaved for biquad_trans()
+	float dm highcutStates[MAX_CHAN_FULLFEATURED][2 * HIGHCUT_SECTIONS];
 	#endif
 
 	sGateState gateState[MAX_CHAN_FULLFEATURED];

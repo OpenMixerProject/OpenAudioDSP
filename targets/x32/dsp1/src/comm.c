@@ -55,6 +55,7 @@ void commExecCommand(unsigned short classId, unsigned short channel, unsigned sh
 	'g' gate
 	'e' equalizer
 		index 'l': lowcut
+		index 'h': highcut
 		index 'e': eq
 		index 'r': reset
 	'c' compressor
@@ -266,17 +267,38 @@ void commExecCommand(unsigned short classId, unsigned short channel, unsigned sh
 			break;
 		case 'e': // Equalizer/Filter
 			switch (index) {
-				case 'l': // LowCut
+				case 'l': // LowCut (2 cascaded biquads = 10 interleaved coeffs + enable)
 					if (channel >= (MAX_CHAN_FULLFEATURED)) {
 						return;
 					}
 
-					if (valueCount == 2) {
-						// copy coefficient
-						dsp.lowcutCoeff[channel] = floatValues[0]; // equation = 1.0f / (1.0f + 2.0f * M_PI * desiredLowCutFrequency * (1.0f/samplerate));
-						dsp.lowcutEnable[channel] = (floatValues[1] == 1.0f);
+					if (valueCount == (5 * LOWCUT_SECTIONS) + 1) {
+						bool prevEnable = dsp.lowcutEnable[channel];
+						bool newEnable  = (floatValues[5 * LOWCUT_SECTIONS] != 0.0f);
+						memcpy(&dsp.lowcutCoeffs[channel][0], &floatValues[0], (5 * LOWCUT_SECTIONS) * sizeof(float));
+						dsp.lowcutEnable[channel] = newEnable;
+						if (!prevEnable && newEnable) {
+							memset(&dsp.lowcutStates[channel][0], 0, (2 * LOWCUT_SECTIONS) * sizeof(float));
+						}
 					}
 					break;
+				#if USE_HIGHCUT == 1
+				case 'h': // HighCut (2 cascaded biquads = 10 interleaved coeffs + enable)
+					if (channel >= (MAX_CHAN_FULLFEATURED)) {
+						return;
+					}
+
+					if (valueCount == (5 * HIGHCUT_SECTIONS) + 1) {
+						bool prevEnable = dsp.highcutEnable[channel];
+						bool newEnable  = (floatValues[5 * HIGHCUT_SECTIONS] != 0.0f);
+						memcpy(&dsp.highcutCoeffs[channel][0], &floatValues[0], (5 * HIGHCUT_SECTIONS) * sizeof(float));
+						dsp.highcutEnable[channel] = newEnable;
+						if (!prevEnable && newEnable) {
+							memset(&dsp.highcutStates[channel][0], 0, (2 * HIGHCUT_SECTIONS) * sizeof(float));
+						}
+					}
+					break;
+				#endif
 				case 'e': // EQ
 					if (channel >= (CHANNELS_WITH_4BD_EQ)) {
 						return;
@@ -290,10 +312,21 @@ void commExecCommand(unsigned short classId, unsigned short channel, unsigned sh
 					break;
 				case 'r': // reset channel-parameters
 					if (channel < MAX_CHAN_FULLFEATURED) {
-						// init single-pole lowcut (50 Hz) and clear its state
-						dsp.lowcutCoeff[channel] = 0.993497573586;
-						dsp.lowcutStatesInput[channel] = 0.0;
-						dsp.lowcutStatesOutput[channel] = 0.0;
+						// reset lowcut biquad sections to passthrough
+						dsp.lowcutEnable[channel] = false;
+						memset(&dsp.lowcutCoeffs[channel][0], 0, (5 * LOWCUT_SECTIONS) * sizeof(float));
+						dsp.lowcutCoeffs[channel][0] = 1.0f;
+						dsp.lowcutCoeffs[channel][1] = 1.0f;
+						memset(&dsp.lowcutStates[channel][0], 0, (2 * LOWCUT_SECTIONS) * sizeof(float));
+
+						#if USE_HIGHCUT == 1
+						// reset highcut biquad sections to passthrough
+						dsp.highcutEnable[channel] = false;
+						memset(&dsp.highcutCoeffs[channel][0], 0, (5 * HIGHCUT_SECTIONS) * sizeof(float));
+						dsp.highcutCoeffs[channel][0] = 1.0f;
+						dsp.highcutCoeffs[channel][1] = 1.0f;
+						memset(&dsp.highcutStates[channel][0], 0, (2 * HIGHCUT_SECTIONS) * sizeof(float));
+						#endif
 					}
 					if (channel >= CHANNELS_WITH_4BD_EQ) {
 						return;
