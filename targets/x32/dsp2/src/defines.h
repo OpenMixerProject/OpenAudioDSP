@@ -62,7 +62,8 @@
 #define TDM_INPUTS				3
 #define SAMPLES_IN_BUFFER		16
 #define BUFFER_COUNT			2	// single-, double-, triple- or multi-buffering (e.g. for delay or other things)
-#define BUFFER_SIZE				SAMPLES_IN_BUFFER * CHANNELS_PER_TDM
+#define BUFFER_SIZE				(SAMPLES_IN_BUFFER * CHANNELS_PER_TDM)
+#define BUFFER_SIZE_I2S			(SAMPLES_IN_BUFFER * 2)
 #define M_PI					3.1415926535897932384626433832795f
 #define INT32_TO_FLOAT_NORM		(1.0f / 2147483647.0f)
 #define SRUDEBUG  					// Check SRU Routings for errors. Can be removed on final design
