@@ -119,8 +119,8 @@ int main() {
 	adi_int_InstallHandler(ADI_CID_P1I, (ADI_INT_HANDLER_PTR)spiISR, 0, true); // SPI Interrupt (called on new SPI-data)
 	//adi_int_InstallHandler(ADI_CID_P3I, (ADI_INT_HANDLER_PTR)audioRxISR, 0, true); // SPORT1 Interrupt (called on new audio-data)
 	adi_int_InstallHandler(ADI_CID_P4I, (ADI_INT_HANDLER_PTR)audioRxISR, 0, true); // SPORT3 Interrupt (called on new audio-data)
-	adi_int_InstallHandler(ADI_CID_P8I, (ADI_INT_HANDLER_PTR)audioSpdifRxImxISR, 0, true); // SPORT4 Interrupt (called when new data from SPDIF is available)
-	//adi_int_InstallHandler(ADI_CID_P5I, (ADI_INT_HANDLER_PTR)audioSpdifTxImxISR, 0, true); // SPORT5 Interrupt (called when new data for SPDIF is requested)
+	//adi_int_InstallHandler(ADI_CID_P8I, (ADI_INT_HANDLER_PTR)nan, 0, true); // SPORT4 Interrupt
+	//adi_int_InstallHandler(ADI_CID_P5I, (ADI_INT_HANDLER_PTR)nan, 0, true); // SPORT5 Interrupt
 	//adi_int_InstallHandler(ADI_CID_P16I, (ADI_INT_HANDLER_PTR)audioSpdifTxXlrISR, 0, true); // SPORT6 Interrupt (called when new data for SPDIF is requested)
 	//adi_int_InstallHandler(ADI_CID_TMZHI, timerIsr, (void *)&timerCounter, true); // iid - high priority core timer. Use "ADI_CID_TMZLI" for low priority
 	adi_int_InstallHandler(ADI_CID_P0I, (ADI_INT_HANDLER_PTR)misc0ISR, 0, true); // MISCA0 Interrupt on P0I or P12I

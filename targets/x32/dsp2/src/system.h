@@ -5,8 +5,8 @@
 #include "sharc_board.h"
 #include "audio_io.h"
 
-extern int pm audioTx_tcb[4][BUFFER_COUNT][4];
-extern int pm audioRx_tcb[4][BUFFER_COUNT][4];
+extern int pm audioTx_tcb[5][BUFFER_COUNT][4];
+extern int pm audioRx_tcb[5][BUFFER_COUNT][4];
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,8 +24,6 @@ void systemSpdifTxInit(void);
 void systemCrash(void);
 
 void audioRxISR(uint32_t iid, void *handlerarg);
-void audioSpdifRxImxISR(uint32_t iid, void *handlerarg);
-void audioSpdifTxImxISR(uint32_t iid, void *handlerarg);
 void audioSpdifTxXlrISR(uint32_t iid, void *handlerarg);
 
 #ifdef __cplusplus

@@ -55,11 +55,13 @@
 	SPORT0A   -> TDM FX OUT0
 	SPORT0B   -> TDM FX OUT1
 	SPORT2A   -> TDM FX PLAY OUT
+	SPORT4A   -> I2S MCUREC OUT
 	SPORT6A	  -> SPDIF OUT
 
 	TDM FX IN0 -> SPORT1A
 	TDM FX IN1 -> SPORT1B
 	TDM REC IN -> SPORT3A
+	I2S MCUPLAY IN -> SPORT5A
 */
 
 #pragma file_attr("prefersMem=internal") // let the linker know, that all variables should be placed into the internal ram
@@ -133,7 +135,7 @@ void audioInit(void) {
 
 		dsp.oscillatorFreq[0] = 500;
 		dsp.oscillatorFreq[1] = 1000;
-		dsp.oscillatorVolume[0] = 0.1f * 2147483647.0f; // 50% ~ -20dBfs
+		dsp.oscillatorVolume[0] = 0.5f * 2147483647.0f; // 50% ~ -20dBfs
 		dsp.oscillatorVolume[1] = dsp.oscillatorVolume[0]; // 50% ~ -20dBfs
 	#endif
 }
@@ -274,6 +276,20 @@ void audioProcessData(void) {
 
 		tdmOffset += CHANNELS_PER_TDM;
 	}
+
+	// copy interleaved DMA input-buffer from i.MX253 input channel buffers
+	#pragma loop_count(2)
+	for (int i_ch = 0; i_ch < 2; i_ch++) {
+		float* dst = &audioBuffer[TAP_OUTPUT][DSP_BUF_IDX_IMXIN_LEFT + i_ch][0];
+
+		#pragma loop_count(SAMPLES_IN_BUFFER)
+		for (int s = 0; s < SAMPLES_IN_BUFFER; s++) {
+			// receive audio-data as 24-bit integer via I2S
+			// as the DSP is working internally with values between -2^31.0f and +2^31.0f we have to multiply by 256 first
+			dst[s] = (float)audioLinuxRxBuf[s * 2 + i_ch] * 256.0f;
+		}
+	}
+
 
 	// reset SPDIF-read-pointer to zero as we have new data in the buffer
 	audioIoBeginBlock();

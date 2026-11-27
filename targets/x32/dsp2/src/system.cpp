@@ -254,7 +254,7 @@ void systemSruInit(void) {
 	SRU(LOW, DAI_PB07_I); // TDM FX IN1
 	SRU(LOW, DAI_PB09_I); // TDM REC IN
 
-	// tie the pin buffer enable inputs LOW to make DAI pins 1,2, 11-14 and 19 inputs
+	// tie the pin buffer enable inputs LOW to make DAI pins 1-5, 7 and 9 inputs
 	SRU(LOW, PBEN01_I); // TDM FS
 	SRU(LOW, PBEN02_I); // TDM BCLK
 	SRU(LOW, PBEN03_I); // FS2
@@ -275,51 +275,51 @@ void systemSruInit(void) {
 
 
 
+	// setup SRU for I2S to/from i.MX253 (Linux)
+	// ========================================
+	// route Framesync to SPORT
+	SRU(DAI_PB03_O, SPORT4_FS_I);  // I2S FS -> SPORT4 FS
+	SRU(DAI_PB03_O, SPORT5_FS_I);  // I2S FS -> SPORT5 FS
+
+	// route Bitclock to SPORT
+	SRU(DAI_PB04_O, SPORT4_CLK_I); // I2S BCLK  -> SPORT4 CLK
+	SRU(DAI_PB04_O, SPORT5_CLK_I); // I2S BCLK  -> SPORT5 CLK
+	
+	// route data-input to SPORT
+	SRU(DAI_PB11_O, SPORT5_DA_I); // I2S MCUPLAY -> SPORT4 IN0
+	
+	// tie the pin buffer inputs LOW as these pins are input-pins and buffer is not used
+	SRU(LOW, DAI_PB11_I); // I2S MCUPLAY
+	
+	// tie the pin buffer enable inputs LOW to make DAI pins inputs
+	SRU(LOW, PBEN11_I); // I2S MCUPLAY
+	
+	// route SPORT to data-output
+	SRU(SPORT4_DA_O, DAI_PB12_I); // SPORT5 DATA OUT0 -> I2S MCUREC
+	
+	// tie the pin buffer enable inputs HIGH to make DAI pin 12 an output
+	SRU(HIGH, PBEN12_I); // I2S MCUREC
+
 
 
 	// setup SRU for SPDIF (see Figure 13 on page 12 in EE-266)
 	// ========================================
-	// SPORT 4 is used for SPDIF Input from i.MX253
-	// SPORT 5 is used for SPDIF Output to i.MX253
 	// SPORT 6 is used for AES/EBU Output on DAI13
-
-	// Step 1: configure the SPDIF Receiver (Input) from i.MX253
-	// ----------------------------------------
-	// connecting DIR to SPORT4
-	SRU(DIR_CLK_O, SPORT4_CLK_I); // connect DIR-clock-output to SPORT4-clock-input
-	SRU(DIR_DAT_O, SPORT4_DA_I); // connect DIR-Data-output to SPORT4-data-input
-	SRU(DIR_FS_O, SPORT4_FS_I); // connect DIR-frameSync-output to SPORT4-frameSync-Input
-
-	// connecting DAI_PIN11 to DIR
-	SRU(LOW, PBEN11_I); // set DAI Pin 11 to input
-	SRU(DAI_PB11_O, DIR_I); // connect DAI-11-data-output to DIR-data-input
-
-
-	// Step 2: configure the SPDIF Transmitter (Output) to i.MX253 and XLR-connector
-	// connecting PrecisionClockGenerator to Clock-Source and SPORT5 and SPORT6
-	// ----------------------------------------
-	SRU(DAI_PB04_O, PCG_EXTA_I); // connect 24.576MHz Clock to PCG_CLKA-Input
-	SRU(DAI_PB04_O, PCG_EXTB_I); // connect 24.576MHz Clock to PCG_CLKB-Input
-	SRU(PCG_CLKA_O, SPORT5_CLK_I); // connecting PCG_CLKA to SPORT5_CLK
+	
+	// configure the SPDIF Transmitter (Output) to XLR-connector
+	// connecting PrecisionClockGenerator to Clock-Source and SPORT6
+	SRU(DAI_PB04_O, PCG_EXTA_I); // connect 3.072MHz Clock to PCG_CLKA-Input
+	SRU(DAI_PB04_O, PCG_EXTB_I); // connect 3.072MHz Clock to PCG_CLKB-Input
 	SRU(PCG_CLKA_O, SPORT6_CLK_I); // connecting PCG_CLKA to SPORT6_CLK
 	SRU(PCG_CLKA_O, DIT_CLK_I); // connecting PCG_CLKA to DIT_CLK
 	SRU(PCG_CLKB_O, DIT_HFCLK_I); // connecting PCG_CLKB to DIT_HFCLK
-	SRU(PCG_FSA_O, SPORT5_FS_I); // connecting PCG_FSA to SPORT5_FS
 	SRU(PCG_FSA_O, SPORT6_FS_I); // connecting PCG_FSA to SPORT6_FS
 	SRU(PCG_FSA_O, DIT_FS_I); // connecting PCG_FSA to DIT_FS
-	//SRU(SPORT5_DA_O, DIT_DAT_I); // connecting SPORT5_DA to DIT_DAT
 	SRU(SPORT6_DA_O, DIT_DAT_I); // connecting SPORT6_DA to DIT_DAT
-
-	// connecting DIT to DAI_PIN12
-	SRU(HIGH, PBEN12_I); // set DAI Pin 12 to output
-	SRU(DIT_O, DAI_PB12_I); // connect DIT-signal-output to DAI Pin12
 
 	// connecting DIT to DAI_PIN13
 	SRU(HIGH, PBEN13_I); // set DAI Pin 13 to output
 	SRU(DIT_O, DAI_PB13_I); // connect DIT-signal-output to DAI Pin13
-
-
-
 
 
 
@@ -349,14 +349,20 @@ void systemSportInit() {
 	*pSPCTL1 = 0;
 	*pSPCTL2 = 0;
 	*pSPCTL3 = 0;
+	*pSPCTL4 = 0;
+	*pSPCTL5 = 0;
 	*pSPMCTL0 = 0; // SPORT 0 Multichannel Control Register
 	*pSPMCTL1 = 0;
 	*pSPMCTL2 = 0;
 	*pSPMCTL3 = 0;
+	*pSPMCTL4 = 0;
+	*pSPMCTL5 = 0;
 	*pDIV0 = 0x00000000;
 	*pDIV1 = 0x00000000;
 	*pDIV2 = 0x00000000;
 	*pDIV3 = 0x00000000;
+	*pDIV4 = 0x00000000;
+	*pDIV5 = 0x00000000;
 
 	// configure TDM8 transmitter
 	// SPEN_A	Channel A enabled
@@ -370,6 +376,8 @@ void systemSportInit() {
 	*pSPCTL0 |= SLEN32 | CKRE | FSR | SDEN_B | SCHEN_B | SPTRAN;
 	*pSPCTL2  = SLEN32 | CKRE | FSR | SDEN_A | SCHEN_A | SPTRAN;
 	*pSPCTL2 |= SLEN32 | CKRE | FSR | SDEN_B | SCHEN_B | SPTRAN;
+	// configure I2S transmitter
+	*pSPCTL4  = SLEN32 | CKRE | FSR | SDEN_A | SCHEN_A | SPTRAN;
 
 	// configure TDM8 receiver
 	// SPEN_A 	Channel A enabled
@@ -382,6 +390,8 @@ void systemSportInit() {
 	*pSPCTL1 |= SLEN32 | CKRE | FSR | SDEN_B | SCHEN_B;
 	*pSPCTL3  = SLEN32 | CKRE | FSR | SDEN_A | SCHEN_A;
 	*pSPCTL3 |= SLEN32 | CKRE | FSR | SDEN_B | SCHEN_B;
+	// configure I2S receiver
+	*pSPCTL5  = SLEN32 | CKRE | FSR | SDEN_A | SCHEN_A;
 
 	// configure DMA memory
 	// chained DMA is used to autoinitialize next DMA in line
@@ -392,13 +402,16 @@ void systemSportInit() {
 	*pCPSP0A = (((unsigned int)&audioTx_tcb[0][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
 	*pCPSP0B = (((unsigned int)&audioTx_tcb[1][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
 	*pCPSP2A = (((unsigned int)&audioTx_tcb[2][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
-	*pCPSP2B = (((unsigned int)&audioTx_tcb[3][0][0] + 3) & OFFSET_MASK); // unused channel
+	*pCPSP2B = (((unsigned int)&audioTx_tcb[4][0][0] + 3) & OFFSET_MASK); // unused channel
+	*pCPSP4A = (((unsigned int)&audioTx_tcb[3][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
+	*pCPSP4B = (((unsigned int)&audioTx_tcb[4][0][0] + 3) & OFFSET_MASK); // unused channel
 
 	*pCPSP1A = (((unsigned int)&audioRx_tcb[0][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
 	*pCPSP1B = (((unsigned int)&audioRx_tcb[1][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
 	*pCPSP3A = (((unsigned int)&audioRx_tcb[2][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
-	*pCPSP3B = (((unsigned int)&audioRx_tcb[3][0][0] + 3) & OFFSET_MASK) | PCI; // unused channel and enable interrupt after every processed TCB (set PCI-bit)
-
+	*pCPSP3B = (((unsigned int)&audioRx_tcb[4][0][0] + 3) & OFFSET_MASK); // unused channel
+	*pCPSP5A = (((unsigned int)&audioRx_tcb[3][0][0] + 3) & OFFSET_MASK); // pointing DMA to desired memory
+	*pCPSP5B = (((unsigned int)&audioRx_tcb[4][0][0] + 3) & OFFSET_MASK) | PCI; // unused channel and enable interrupt after every processed TCB (set PCI-bit)
 
 
 
@@ -407,32 +420,42 @@ void systemSportInit() {
 	*pSPMCTL1 = NCH7 | MFD1; // set to 8 channels | multichannel mode 1 cycle frame sync delay
 	*pSPMCTL2 = NCH7 | MFD1; // set to 8 channels | multichannel mode 1 cycle frame sync delay
 	*pSPMCTL3 = NCH7 | MFD1; // set to 8 channels | multichannel mode 1 cycle frame sync delay
+	*pSPMCTL4 = NCH1 | MFD1; // set to 2 channels | multichannel mode 1 cycle frame sync delay
+	*pSPMCTL5 = NCH1 | MFD1; // set to 2 channels | multichannel mode 1 cycle frame sync delay
 
 	// enable transmit channels 0-39 (see Processor Hardware Reference v2.2 page 7-38)
 	*pMT0CS0 = 0x0000FFFF; // SPORT 0 multichannel tx select, select channels 15-0 of 31 - 0
 	*pMT2CS0 = 0x0000FFFF; // SPORT 2 multichannel tx select, channels 15-0 of 31 - 0
+	*pMT4CS0 = 0x0000FFFF; // SPORT 4 multichannel tx select, channels 15-0 of 31 - 0
 	// enable receive channels 0-39
 	*pMR1CS0 = 0x0000FFFF; // SPORT 1 multichannel rx select, channels 15-0 of 31 - 0
 	*pMR3CS0 = 0x0000FFFF; // SPORT 3 multichannel rx select, channels 15-0 of 31 - 0
+	*pMR5CS0 = 0x0000FFFF; // SPORT 5 multichannel rx select, channels 15-0 of 31 - 0
 
 	// no companding for the 8 active timeslots for transmitter (would be available on channel A anyway)
 	*pMT0CCS0 = 0;
 	*pMT2CCS0 = 0;
+	*pMT4CCS0 = 0;
 	// no companding for the 8 active timeslots for receiver (would be available on channel A anyway)
 	*pMR1CCS0 = 0;
 	*pMR3CCS0 = 0;
+	*pMR5CCS0 = 0;
 
 	// enable multichannel operation (SPORT mode and DMA in standby and ready)
 	*pSPMCTL0 |= MCEA | MCEB;	// Sender A/B for FX OUT0/1
 	*pSPMCTL2 |= MCEA;			// Sender A for FX PLAY OUT
+	*pSPMCTL4 |= MCEA;			// Sender A for MCUREC
 	*pSPMCTL1 |= MCEA | MCEB;	// Receiver A/B for FX IN0/1
 	*pSPMCTL3 |= MCEA;			// Receiver A for FX REC IN
+	*pSPMCTL5 |= MCEA;			// Receiver A for MCUPLAY
 
 	// enable SPORT
 	*pSPCTL0 |= SPEN_A | SPEN_B;
 	*pSPCTL2 |= SPEN_A;
+	*pSPCTL4 |= SPEN_A; // I2S sender to i.MX253
 	*pSPCTL1 |= SPEN_A | SPEN_B;
 	*pSPCTL3 |= SPEN_A;
+	*pSPCTL5 |= SPEN_A; // I2S transmitter to i.MX253
 
 
 
@@ -442,8 +465,6 @@ void systemSportInit() {
 	// SLEN32 = WordLength = 32 bit
 	// OPMODE = I2S mode enable
 	// SPTRAN = Transmitter
-	*pSPCTL4 |= SPEN_A | SLEN32 | OPMODE; // SPDIF receiver from i.MX253
-	*pSPCTL5 |= SPEN_A | SLEN32 | OPMODE | SPTRAN; // SPDIF transmitter to i.MX253
 	*pSPCTL6 |= SPEN_A | SLEN32 | OPMODE | SPTRAN; // SPDIF transmitter to AES/EBU output
 }
 
